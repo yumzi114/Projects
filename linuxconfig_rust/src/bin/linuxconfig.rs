@@ -1,6 +1,6 @@
 use std::env;
 use dirs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io;
 use std::process::{Command, Stdio};
 use colored::Colorize;
