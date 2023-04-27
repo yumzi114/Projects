@@ -2,12 +2,15 @@
 name = "linuxconfig_rust"
 version = "0.1.0"
 edition = "2021"
-
+default-run="linuxconfig"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "4.2.4", features = ["derive"] }
 colored = "2.0.0"
 crossterm = "0.25.0"
 dirs = "5.0.0"
+regex = "1"
 runas = "1.0.0"
 terminal-menu = "2.0.5"
+

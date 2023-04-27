@@ -1,44 +1,64 @@
 use std::env;
-use dirs;
 use std::path::{Path, PathBuf};
-use std::io;
-use std::process::{Command, Stdio};
-use colored::Colorize;
-use terminal_menu::*;
+use crossterm::style::Stylize;
+use dirs;
+use regex::Regex;
+use clap::{Parser,Command,ArgAction,Arg,Subcommand};
+use terminal_menu::{run,label,list,button,menu,mut_menu};
 
 
-fn default (){
-    let default_pack=["linux-headers","dkms","base-devel","terminus-font",
-    "noto-fonts-cjk","ttf-dejavu","tldr","ibus","ibus-hangul","mesa","mesa-utils","lib32-mesa"];
-    runas::Command::new("pacman")
-    .arg("-Sy")
-    .args(&default_pack)
-    .status()
-    .unwrap();
+const PACMAN_LIST:[&str;14]= [ "linux-headers","dkms","base-devel","terminus-font",
+"noto-fonts-cjk","ttf-dejavu","tldr","ibus","ibus-hangul","mesa","mesa-utils","lib32-mesa", "pciutils","usbutils"];
+const GIT_LIST:[&str;1]=["https://aur.archlinux.org/yay-git.git"];
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    ///default pacman package install
+    // #[arg(short, long)]
+    // default: Option<String>,
+    #[command(subcommand)]
+    exes: Option<Commands>,
+    // Number of times to greet
+    // #[arg(short, long, default_value_t = 1)]
+    // count: u8,
 }
-fn yay (root:&str){
-    assert!(env::set_current_dir(&root).is_ok());
-    let yay_path = Path::new("./yay-git");
-    if !yay_path.is_dir(){
-        Command::new("git")
-        .arg("clone")
-        .arg("https://aur.archlinux.org/yay-git.git")
-        .status()
-        // .spawn()
-        .unwrap();
-        // .expect("failed to execute process");
+#[derive(Subcommand)]
+enum Commands {
+    /// install default pacman package
+    default ,
+    /// install yay package manager(git - binary)
+    yay,
+    /// open linux config settings menu
+    set,
+}
+fn main() {
+    let homedir = dirs::home_dir();
+    match homedir {
+        Some(dir)=>{
+            assert!(env::set_current_dir(Path::new(&dir)).is_ok());
+            let temp = env::current_dir().unwrap();
+            let pwd =  temp.to_str().unwrap();
+            println!(" HOME directory -{}-", Stylize::bold(pwd).green());
+        }
+        None=>{println!("Not found {}",Stylize::bold("HOME dir").red())}        
     }
-    let yaybin = Path::new("/bin/yay").is_file();
-    if !yaybin{
-        assert!(env::set_current_dir(&yay_path).is_ok());
-        Command::new("makepkg")
-        .arg("-si")
-        .arg("--noconfirm")
-        .status()
-        .unwrap();
+    let args = Args::parse();
+    match &args.exes {
+        Some(Commands::default)=>{
+            println!("install default pacman package");
+        }
+        Some(Commands::yay)=>{
+            println!("yay~~");
+        }
+        Some(Commands::set)=>{
+            println!("archlinux config setting");
+            setmenu();
+        }
+        None=>{println!("command list.. {}",Stylize::bold("--help").red())}
     }
 }
-fn mymenu (){
+fn setmenu (){
     use crossterm::style::Color;
     let menu = menu(vec![
         // label("archlinux default set").colorize(Color::Red),
@@ -52,37 +72,4 @@ fn mymenu (){
     run(&menu);
     println!("Selected: {}", mut_menu(&menu).selected_item_name());
     // println!("{}", mut_menu(&menu).);
-
-
-}
-fn main() {
-    let homedir = dirs::home_dir().expect("Fail not found home");
-    let root = Path::new(&homedir);
-    assert!(env::set_current_dir(&root).is_ok());
-    let temp = env::current_dir().expect("Fail working dir");
-    let pwd =  temp.to_str().expect("Fail can't dir to string");
-    loop {
-        let mut ask = String::new();
-        println!("choise work num(working dir:{}) ",pwd.bold().red());
-        println!("First set {} plz","pacman speed[5]".bold().blue());
-        println!("{} (default{} yay{} wildan(Hyprland){} Nvidia{} set menu{} exit{})",
-        "install".bold().green(),"[1]".bold().green(),"[2]".bold().green(),"[3]".bold().green(),
-        "[4]".bold().green(),"[5]".bold().green(),"[0]".bold().red()
-    );
-        io::stdin().read_line(&mut ask)
-            .expect("error");
-        let ask=match ask.trim().parse(){
-            Ok(num)=>num,
-            Err(_)=>continue,
-        };
-        match ask{
-            1=>default(),
-            2=>yay(pwd),
-            3=>println!("3"),
-            4=>println!("4"),
-            5=>mymenu(),
-            0=>break,
-            _=>println!("{}","Not found menu".bold().red()),
-        }
-    }
 }
