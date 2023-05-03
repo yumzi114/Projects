@@ -20,8 +20,7 @@ fn main()->Result<(),eframe::Error>{
     )
 }
 struct MyInfo{
-    pacman : System,
-    system : System,
+    list : Vec<System>,
 }
 struct System{
     sysname:String,
@@ -36,13 +35,24 @@ impl System{
             path:filepath.to_string(),
         }
     }
+    fn menu(&self)->String{
+        let temp = self.sysname.clone();
+        let name = [temp," : ".to_string()].join("");
+        name
+    }
 }
 impl MyInfo{
     fn new()->MyInfo{
         MyInfo { 
-            pacman: (System::new("/etc/pacman.conf","pacman.conf")), 
-            system: (System::new("/etc/systemd/system.conf","system.conf")) }
+            list:vec![
+                System::new("/etc/systemd/system.conf","system.conf"),
+                System::new("/etc/pacman.conf","pacman"),
+                System::new("/bin/yay","yay"),
+                System::new("/etc/modprobe.d/vfio.conf","vfio")
+                ]
+        }
     }
+    
 }
 #[derive(Default)]
 struct  MyApp{
@@ -55,21 +65,20 @@ impl  eframe::App for MyApp{
         window_frame::custom_window_frame(ctx, frame, "My Test App",|ui|{
             let my_system = MyInfo::new();
             ui.heading("Check System Files");
-            ui.separator();
             ui.horizontal_wrapped(|ui|{
-                ui.label("system.conf: ");
-                if my_system.system.used {
-                    ui.label(RichText::new("Used").color(Color32::from_rgb(110, 255, 110)));
-                    let btn = ui.small_button("📋")
-                        .on_hover_text("copy path");
-                    if btn.clicked(){
-                        ui.output_mut(|o| o.copied_text = my_system.system.path.into());
+                for i in my_system.list {
+                    ui.label(i.menu().as_str());
+                    if i.used {
+                        ui.label(RichText::new("Used").color(Color32::from_rgb(110, 255, 110)));
+                        let btn = ui.small_button("📋")
+                            .on_hover_text("copy path");
+                        if btn.clicked(){
+                            ui.output_mut(|o| o.copied_text = i.path.into());
+                        }
+                    }else {
+                        ui.label(RichText::new("Undefined").color(Color32::from_rgb(244, 4, 4)));
                     }
-                }else {
-                    ui.label(RichText::new("Undefined").color(Color32::from_rgb(244, 4, 4)));
                 }
-                ui.label("pacman: ");
-                
             });
             let cmd = "cargo install puffin_viewer && puffin_viewer --url 127.0.0.1:8585";
             ui.horizontal(|ui| {
@@ -78,6 +87,7 @@ impl  eframe::App for MyApp{
                     ui.output_mut(|o| o.copied_text = cmd.into());
                 }
             });
+            ui.separator();
             
         })
     }
